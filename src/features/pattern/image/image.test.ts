@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest'
+import { adjustPixels, compositeBackground } from './pixels'
+import { quantizePixels, removeIsolatedSpeckles } from './quantize'
+
+describe('image pixel preparation', () => {
+  it('composites transparent pixels into the background yarn', () => {
+    const pixels = Uint8ClampedArray.from([
+      255, 0, 0, 0,
+      255, 0, 0, 255
+    ])
+
+    expect(Array.from(compositeBackground(pixels, [245, 239, 227]))).toEqual([
+      245, 239, 227, 255,
+      255, 0, 0, 255
+    ])
+  })
+
+  it('adjusts brightness and contrast while clamping channels', () => {
+    const pixels = Uint8ClampedArray.from([250, 128, 5, 255])
+
+    expect(Array.from(adjustPixels(pixels, 20, 0))).toEqual([255, 179, 56, 255])
+    expect(Array.from(adjustPixels(pixels, 0, 100))).toEqual([255, 128, 0, 255])
+  })
+})
+
+describe('palette reduction', () => {
+  it('reserves palette index zero for the chosen background', () => {
+    const pixels = Uint8ClampedArray.from([
+      245, 239, 227, 255,
+      255, 0, 0, 255,
+      255, 0, 0, 255,
+      0, 0, 255, 255
+    ])
+    const result = quantizePixels(pixels, 3, [245, 239, 227])
+
+    expect(result.colors[0]).toEqual([245, 239, 227])
+    expect(result.colors).toHaveLength(3)
+    expect(result.indices[0]).toBe(0)
+    expect(result.indices[1]).toBe(result.indices[2])
+    expect(result.indices[3]).not.toBe(result.indices[1])
+  })
+
+  it('is deterministic for identical source pixels', () => {
+    const pixels = Uint8ClampedArray.from([
+      20, 20, 20, 255,
+      220, 30, 30, 255,
+      20, 30, 220, 255,
+      20, 20, 20, 255
+    ])
+
+    expect(quantizePixels(pixels, 3, [20, 20, 20]))
+      .toEqual(quantizePixels(pixels, 3, [20, 20, 20]))
+  })
+
+  it('replaces an isolated cell with the orthogonal majority', () => {
+    const indices = Uint8Array.from([
+      0, 0, 0,
+      0, 1, 0,
+      0, 0, 0
+    ])
+
+    expect(Array.from(removeIsolatedSpeckles(indices, 3, 3))).toEqual([
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0
+    ])
+  })
+})
