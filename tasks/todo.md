@@ -1,0 +1,18 @@
+# Crochet Grids MVP
+
+- [x] Task 1: Application foundation and public shell
+- [ ] Task 2: Crochet domain model and row instructions
+- [ ] Task 3: Grid editing operations and patch history
+- [ ] Task 4: Local image conversion and palette reduction
+- [ ] Task 5: Project setup workflow
+- [ ] Task 6: Canvas editor, palette, and responsive tools
+- [ ] Task 7: Crochet complexity guidance
+- [ ] Task 8: IndexedDB persistence and recent projects
+- [ ] Task 9: Row-following mode
+- [ ] Task 10: PNG and printable PDF exports
+- [ ] Task 11: SEO, legal pages, consent, and release surfaces
+- [ ] Task 12: End-to-end verification and MVP review
+
+## Review
+
+Implementation review will record verified commands, browser sizes, and known MVP limitations here.

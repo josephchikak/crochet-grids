@@ -1,0 +1,127 @@
+@import 'tailwindcss';
+
+:root {
+  --cotton: #f1ebdd;
+  --cotton-muted: #cbc4b6;
+  --ink: #182019;
+  --ink-muted: #4f5a51;
+  --indigo: #2946d3;
+  --poppy: #ef6045;
+  --sage: #b9c7af;
+  --grid: #cfc6b5;
+  --grid-strong: #9f9788;
+  --grid-dark: #3b443c;
+}
+
+@theme inline {
+  --color-cotton: var(--cotton);
+  --color-cotton-muted: var(--cotton-muted);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-indigo: var(--indigo);
+  --color-poppy: var(--poppy);
+  --color-sage: var(--sage);
+  --color-grid: var(--grid);
+  --color-grid-strong: var(--grid-strong);
+  --color-grid-dark: var(--grid-dark);
+  --font-sans: var(--font-figtree);
+  --font-mono: var(--font-azeret-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--cotton);
+  color: var(--ink);
+  font-family: var(--font-figtree), sans-serif;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--poppy);
+  outline-offset: 3px;
+}
+
+.primary-action {
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--ink);
+  background: var(--indigo);
+  padding: 0.75rem 1.1rem;
+  color: white;
+  font-weight: 650;
+  box-shadow: 4px 4px 0 var(--ink);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.primary-action:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.text-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+}
+
+.brand-mark i {
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.brand-mark i:nth-child(2),
+.brand-mark i:nth-child(3) {
+  background: var(--indigo);
+}
+
+.grid-surface {
+  background-image:
+    linear-gradient(to right, var(--ink) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ink) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.motif-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.motif-cell {
+  aspect-ratio: 1;
+  border-right: 1px solid var(--grid-strong);
+  border-bottom: 1px solid var(--grid-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .primary-action {
+    transition: none;
+  }
+}
