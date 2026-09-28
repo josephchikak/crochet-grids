@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { ArrowLeft, Check, CloudOff, ListChecks, ListOrdered, LoaderCircle, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, Check, CloudOff, Download, FileImage, FileText, ListChecks, ListOrdered, LoaderCircle, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { analysePattern } from '@/features/pattern/analysis/analyse-pattern'
 import { FollowMode, type FollowProgress } from '@/features/pattern/follow/follow-mode'
 import type { PaletteEntry, PatternProject, PatternWarning } from '@/features/pattern/model/types'
@@ -34,12 +34,17 @@ const toolShortcuts: Record<string, EditorTool> = {
   h: 'pan'
 }
 
+type ExportChoice = 'png-grid' | 'png-labelled' | 'pdf'
+type ExportState = { kind: 'idle' | 'working' | 'failed', message?: string }
+
 export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', saveError }: PatternEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, project, createEditorState)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [panelTab, setPanelTab] = useState<'palette' | 'checks'>('palette')
   const [isMirrorOpen, setIsMirrorOpen] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [exportState, setExportState] = useState<ExportState>({ kind: 'idle' })
   const reportedProject = useRef(project)
   const { grid, palette } = state.project
   // Analysis trails behind painting so strokes stay responsive on large charts
@@ -111,6 +116,37 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
   const updateProgress = useCallback((progress: FollowProgress) =>
     dispatch({ type: 'set-progress', ...progress }), [])
   const exitFollow = useCallback(() => setIsFollowing(false), [])
+  const openExport = useCallback(() => {
+    setExportState({ kind: 'idle' })
+    setIsExportOpen(true)
+  }, [])
+  const closeExport = useCallback(() => {
+    if (exportState.kind !== 'working') setIsExportOpen(false)
+  }, [exportState.kind])
+  const handleExport = useCallback(async (choice: ExportChoice) => {
+    setExportState({ kind: 'working' })
+    try {
+      const { downloadBlob, safeExportFilename } = await import('@/lib/download')
+      if (choice === 'pdf') {
+        const { exportPdf } = await import('@/features/pattern/export/pdf-export')
+        const blob = await exportPdf(state.project, { includeWrittenRows: true })
+        downloadBlob(blob, safeExportFilename(state.project.name, 'pdf'))
+      } else {
+        const { exportPng } = await import('@/features/pattern/export/png-export')
+        const blob = await exportPng(state.project, {
+          mode: choice === 'png-grid' ? 'grid-only' : 'labelled'
+        })
+        downloadBlob(blob, safeExportFilename(state.project.name, 'png'))
+      }
+      setExportState({ kind: 'idle' })
+      setIsExportOpen(false)
+    } catch (error) {
+      setExportState({
+        kind: 'failed',
+        message: error instanceof Error ? error.message : 'The export could not be created'
+      })
+    }
+  }, [state.project])
   const toggleSymbols = useCallback(() => dispatch({ type: 'toggle-symbols' }), [])
   const toggleView = useCallback(() => dispatch({
     type: 'set-view',
@@ -140,6 +176,14 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
         >
           <ListOrdered aria-hidden='true' size={18} />
           <span className='sr-only sm:not-sr-only'>Follow pattern</span>
+        </button>
+        <button
+          aria-label='Export chart'
+          className='grid size-11 shrink-0 place-items-center border border-ink bg-cotton'
+          onClick={openExport}
+          type='button'
+        >
+          <Download aria-hidden='true' size={19} />
         </button>
         <button
           aria-label={`Pattern checks: ${warnings.length} ${warnings.length === 1 ? 'suggestion' : 'suggestions'}`}
@@ -247,6 +291,14 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
         <FollowMode onExit={exitFollow} onProgressChange={updateProgress} project={state.project} />
       )}
 
+      {isExportOpen && (
+        <ExportDialog
+          onCancel={closeExport}
+          onExport={handleExport}
+          state={exportState}
+        />
+      )}
+
       {isMirrorOpen && (
         <MirrorDialog
           onCancel={() => setIsMirrorOpen(false)}
@@ -257,6 +309,110 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
         />
       )}
     </div>
+  )
+}
+
+function ExportDialog ({ onCancel, onExport, state }: {
+  onCancel: () => void
+  onExport: (choice: ExportChoice) => void
+  state: ExportState
+}) {
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  const isWorking = state.kind === 'working'
+
+  useEffect(() => {
+    cancelRef.current?.focus()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isWorking) onCancel()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isWorking, onCancel])
+
+  return (
+    <div className='fixed inset-0 z-40 grid place-items-end bg-ink/50 p-3 sm:place-items-center sm:p-6'>
+      <div
+        aria-describedby='export-description'
+        aria-labelledby='export-title'
+        aria-modal='true'
+        className='w-full max-w-lg border border-ink bg-cotton p-5 shadow-[6px_6px_0_var(--ink)]'
+        role='dialog'
+      >
+        <div className='flex items-start justify-between gap-4'>
+          <div>
+            <h2 className='text-2xl font-semibold tracking-[-0.035em]' id='export-title'>Export chart</h2>
+            <p className='mt-2 text-sm leading-6 text-ink-muted' id='export-description'>
+              Keep a phone-friendly image or print a PDF with a yarn key, row directions and written colour runs.
+            </p>
+          </div>
+          <button aria-label='Close export' className='grid size-11 shrink-0 place-items-center' disabled={isWorking} onClick={onCancel} ref={cancelRef} type='button'>
+            <X aria-hidden='true' size={20} />
+          </button>
+        </div>
+
+        <div className='mt-5 grid gap-3 sm:grid-cols-2'>
+          <ExportButton
+            description='Just the stitch grid and symbols.'
+            disabled={isWorking}
+            icon={<FileImage aria-hidden='true' size={20} />}
+            label='PNG chart only'
+            onClick={() => onExport('png-grid')}
+          />
+          <ExportButton
+            description='Adds row numbers, directions and yarn key.'
+            disabled={isWorking}
+            icon={<FileImage aria-hidden='true' size={20} />}
+            label='PNG with labels'
+            onClick={() => onExport('png-labelled')}
+          />
+          <ExportButton
+            className='sm:col-span-2'
+            description='A4 pages, printable symbols, yarn key and written rows.'
+            disabled={isWorking}
+            icon={<FileText aria-hidden='true' size={20} />}
+            label='Printable PDF'
+            onClick={() => onExport('pdf')}
+          />
+        </div>
+
+        {isWorking && (
+          <p className='mt-4 flex items-center gap-2 text-sm' role='status'>
+            <LoaderCircle aria-hidden='true' className='animate-spin motion-reduce:animate-none' size={17} />
+            Preparing your chart on this device…
+          </p>
+        )}
+        {state.kind === 'failed' && (
+          <p className='mt-4 border border-poppy bg-poppy/15 p-3 text-sm' role='alert'>
+            {state.message}. Your chart is still safe in this browser.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ExportButton ({ label, description, icon, disabled, className = '', onClick }: {
+  label: string
+  description: string
+  icon: React.ReactNode
+  disabled: boolean
+  className?: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      aria-label={label}
+      className={`flex min-h-20 items-start gap-3 border border-ink bg-white/35 p-4 text-left disabled:cursor-wait disabled:opacity-55 ${className}`}
+      disabled={disabled}
+      onClick={onClick}
+      type='button'
+    >
+      <span className='mt-0.5'>{icon}</span>
+      <span>
+        <span className='block font-semibold'>{label}</span>
+        <span className='mt-1 block text-xs leading-5 text-ink-muted'>{description}</span>
+      </span>
+    </button>
   )
 }
 

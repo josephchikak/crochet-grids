@@ -200,6 +200,18 @@ describe('PatternEditor', () => {
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('offers labelled PNG and printable PDF exports', async () => {
+    const user = userEvent.setup()
+    render(<PatternEditor project={project} onProjectChange={onChange} />)
+
+    await user.click(screen.getByRole('button', { name: 'Export chart' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Export chart' })
+    expect(within(dialog).getByRole('button', { name: 'PNG chart only' })).toBeEnabled()
+    expect(within(dialog).getByRole('button', { name: 'PNG with labels' })).toBeEnabled()
+    expect(within(dialog).getByRole('button', { name: 'Printable PDF' })).toBeEnabled()
+  })
+
   it('lists crochet checks without blocking editing and focuses the affected row', async () => {
     const user = userEvent.setup()
     render(<PatternEditor project={project} onProjectChange={onChange} />)
