@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { createMotifPng } from './helpers'
+import { createMotifPng, declineAnalytics } from './helpers'
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 
 test('edits a chart on a phone without page overflow', async ({ page }) => {
+  await declineAnalytics(page)
   await page.goto('/create')
   await page.getByLabel('Upload image').setInputFiles({
     name: 'motif.png',

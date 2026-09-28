@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { adjustPixels, compositeBackground, cropToSourcePixels } from './pixels'
-import { quantizePixels, removeIsolatedSpeckles } from './quantize'
+import { imageRowsToGridRows, quantizePixels, removeIsolatedSpeckles } from './quantize'
 
 describe('image pixel preparation', () => {
   it('composites transparent pixels into the background yarn', () => {
@@ -76,5 +76,15 @@ describe('crop preparation', () => {
   it('clamps crops that extend past the source', () => {
     expect(cropToSourcePixels({ x: 90, y: -10, width: 50, height: 200 }, 100, 100))
       .toEqual({ x: 90, y: 0, width: 10, height: 100 })
+  })
+})
+
+describe('image to chart row order', () => {
+  it('puts the bottom image row first because grid row 0 is crochet row 1', () => {
+    // Image order is top row first: [top-left, top-right, bottom-left, bottom-right]
+    const imageOrder = Uint8Array.from([1, 2, 3, 4, 5, 6])
+
+    expect(Array.from(imageRowsToGridRows(imageOrder, 2, 3))).toEqual([5, 6, 3, 4, 1, 2])
+    expect(Array.from(imageOrder)).toEqual([1, 2, 3, 4, 5, 6])
   })
 })
