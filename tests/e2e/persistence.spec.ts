@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { createMotifPng } from './helpers'
+import { createMotifPng, declineAnalytics } from './helpers'
 
 test('restores a saved chart after a reload and lists it on the home page', async ({ page }) => {
+  await declineAnalytics(page)
   await page.goto('/create')
   await page.getByLabel('Upload image').setInputFiles({
     name: 'saved-motif.png',
@@ -30,6 +31,7 @@ test('restores a saved chart after a reload and lists it on the home page', asyn
 })
 
 test('restores follow-mode progress after a reload', async ({ page }) => {
+  await declineAnalytics(page)
   await page.goto('/create')
   await page.getByLabel('Upload image').setInputFiles({
     name: 'follow-motif.png',
