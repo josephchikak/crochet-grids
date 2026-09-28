@@ -4,7 +4,7 @@
 - [x] Task 2: Crochet domain model and row instructions
 - [x] Task 3: Grid editing operations and patch history
 - [x] Task 4: Local image conversion and palette reduction
-- [ ] Task 5: Project setup workflow
+- [x] Task 5: Project setup workflow
 - [ ] Task 6: Canvas editor, palette, and responsive tools
 - [ ] Task 7: Crochet complexity guidance
 - [ ] Task 8: IndexedDB persistence and recent projects

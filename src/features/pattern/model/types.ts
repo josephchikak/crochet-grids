@@ -24,6 +24,8 @@ export interface RowRun {
 export interface CropSettings {
   x: number
   y: number
+  width: number
+  height: number
   zoom: number
 }
 

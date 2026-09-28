@@ -116,6 +116,21 @@ button:focus-visible {
   border-bottom: 1px solid var(--grid-strong);
 }
 
+.form-control {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--grid-strong);
+  background: rgb(255 255 255 / 35%);
+  padding: 0.7rem 0.8rem;
+  color: var(--ink);
+  font: inherit;
+}
+
+.form-control:focus {
+  outline: 3px solid var(--indigo);
+  outline-offset: 1px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

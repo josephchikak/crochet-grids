@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adjustPixels, compositeBackground } from './pixels'
+import { adjustPixels, compositeBackground, cropToSourcePixels } from './pixels'
 import { quantizePixels, removeIsolatedSpeckles } from './quantize'
 
 describe('image pixel preparation', () => {
@@ -64,5 +64,17 @@ describe('palette reduction', () => {
       0, 0, 0,
       0, 0, 0
     ])
+  })
+})
+
+describe('crop preparation', () => {
+  it('converts percentage crops into source pixels', () => {
+    expect(cropToSourcePixels({ x: 10, y: 25, width: 50, height: 50 }, 400, 200))
+      .toEqual({ x: 40, y: 50, width: 200, height: 100 })
+  })
+
+  it('clamps crops that extend past the source', () => {
+    expect(cropToSourcePixels({ x: 90, y: -10, width: 50, height: 200 }, 100, 100))
+      .toEqual({ x: 90, y: 0, width: 10, height: 100 })
   })
 })

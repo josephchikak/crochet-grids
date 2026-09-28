@@ -1,7 +1,7 @@
 /// <reference lib='webworker' />
 
 import { patternLimits } from '@/features/pattern/model/defaults'
-import { adjustPixels, compositeBackground, hexToRgb, rgbToHex } from './pixels'
+import { adjustPixels, compositeBackground, cropToSourcePixels, hexToRgb, rgbToHex } from './pixels'
 import { quantizePixels, removeIsolatedSpeckles } from './quantize'
 import type {
   ConversionRequest,
@@ -34,7 +34,7 @@ workerScope.addEventListener('message', async (event: MessageEvent<ConversionWor
 async function convertImage (request: ConversionRequest): Promise<ConversionResult> {
   validateRequest(request)
   const bitmap = await createImageBitmap(request.file)
-  const crop = normalizeCrop(request, bitmap.width, bitmap.height)
+  const crop = cropToSourcePixels(request.crop, bitmap.width, bitmap.height)
   const canvas = new OffscreenCanvas(request.width, request.height)
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) throw new Error('This browser cannot prepare image pixels')
@@ -76,14 +76,6 @@ async function convertImage (request: ConversionRequest): Promise<ConversionResu
     palette,
     preview
   }
-}
-
-function normalizeCrop (request: ConversionRequest, sourceWidth: number, sourceHeight: number) {
-  const x = Math.max(0, Math.min(request.crop.x, sourceWidth - 1))
-  const y = Math.max(0, Math.min(request.crop.y, sourceHeight - 1))
-  const width = Math.max(1, Math.min(request.crop.width, sourceWidth - x))
-  const height = Math.max(1, Math.min(request.crop.height, sourceHeight - y))
-  return { x, y, width, height }
 }
 
 function createPreview (cells: Uint8Array, colors: Array<[number, number, number]>, width: number, height: number) {

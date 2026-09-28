@@ -7,6 +7,7 @@ export interface ConversionRequest {
   height: number
   maxColors: number
   background: { name: string, color: string }
+  // Percentages (0-100) of the source image, so crops survive source downscaling
   crop: { x: number, y: number, width: number, height: number }
   brightness: number
   contrast: number

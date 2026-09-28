@@ -58,6 +58,25 @@ export function rgbToHex ([red, green, blue]: Rgb) {
     .join('')}`
 }
 
+export interface CropArea {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export function cropToSourcePixels (
+  percentCrop: CropArea,
+  sourceWidth: number,
+  sourceHeight: number
+): CropArea {
+  const x = clamp(Math.round(percentCrop.x / 100 * sourceWidth), 0, sourceWidth - 1)
+  const y = clamp(Math.round(percentCrop.y / 100 * sourceHeight), 0, sourceHeight - 1)
+  const width = clamp(Math.round(percentCrop.width / 100 * sourceWidth), 1, sourceWidth - x)
+  const height = clamp(Math.round(percentCrop.height / 100 * sourceHeight), 1, sourceHeight - y)
+  return { x, y, width, height }
+}
+
 function blend (foreground: number, background: number, alpha: number) {
   return Math.round(foreground * alpha + background * (1 - alpha))
 }
