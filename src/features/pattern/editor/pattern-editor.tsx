@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { ArrowLeft, Check, CloudOff, ListChecks, LoaderCircle, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, Check, CloudOff, ListChecks, ListOrdered, LoaderCircle, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { analysePattern } from '@/features/pattern/analysis/analyse-pattern'
+import { FollowMode, type FollowProgress } from '@/features/pattern/follow/follow-mode'
 import type { PaletteEntry, PatternProject, PatternWarning } from '@/features/pattern/model/types'
 import type { SaveStatus } from '@/features/pattern/persistence/use-project-autosave'
 import { ChecksPanel } from './checks-panel'
@@ -38,6 +39,7 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [panelTab, setPanelTab] = useState<'palette' | 'checks'>('palette')
   const [isMirrorOpen, setIsMirrorOpen] = useState(false)
+  const [isFollowing, setIsFollowing] = useState(false)
   const reportedProject = useRef(project)
   const { grid, palette } = state.project
   // Analysis trails behind painting so strokes stay responsive on large charts
@@ -106,6 +108,9 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
     dispatch({ type: 'focus-row', rowNumber: warning.rows[0], cellIndex: warning.cellIndices[0] })
     setIsPanelOpen(false)
   }, [])
+  const updateProgress = useCallback((progress: FollowProgress) =>
+    dispatch({ type: 'set-progress', ...progress }), [])
+  const exitFollow = useCallback(() => setIsFollowing(false), [])
   const toggleSymbols = useCallback(() => dispatch({ type: 'toggle-symbols' }), [])
   const toggleView = useCallback(() => dispatch({
     type: 'set-view',
@@ -128,6 +133,14 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
             <SaveIndicator error={saveError} status={saveStatus} />
           </p>
         </div>
+        <button
+          className='flex min-h-11 items-center gap-2 border border-ink bg-indigo px-3 text-sm font-semibold text-white'
+          onClick={() => setIsFollowing(true)}
+          type='button'
+        >
+          <ListOrdered aria-hidden='true' size={18} />
+          <span className='sr-only sm:not-sr-only'>Follow pattern</span>
+        </button>
         <button
           aria-label={`Pattern checks: ${warnings.length} ${warnings.length === 1 ? 'suggestion' : 'suggestions'}`}
           className='flex min-h-11 items-center gap-2 border border-ink px-3 text-sm font-semibold'
@@ -229,6 +242,10 @@ export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', 
         tool={state.tool}
         view={state.view}
       />
+
+      {isFollowing && (
+        <FollowMode onExit={exitFollow} onProgressChange={updateProgress} project={state.project} />
+      )}
 
       {isMirrorOpen && (
         <MirrorDialog

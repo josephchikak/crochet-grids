@@ -176,8 +176,8 @@ export function ProjectSetupForm ({ convertImage, onCreated }: ProjectSetupFormP
           </div>
           <fieldset className='grid gap-2'>
             <legend className='text-sm font-semibold'>Crochet hand</legend>
-            <Choice label='Right-handed' checked={handedness === 'right'} onChange={() => setHandedness('right')} name='hand' />
-            <Choice label='Left-handed' checked={handedness === 'left'} onChange={() => setHandedness('left')} name='hand' />
+            <Choice label='Right-handed' checked={handedness === 'right'} onChange={() => { setHandedness('right'); setStartingSide('right') }} name='hand' />
+            <Choice label='Left-handed' checked={handedness === 'left'} onChange={() => { setHandedness('left'); setStartingSide('left') }} name='hand' />
           </fieldset>
           <fieldset className='grid gap-2'>
             <legend className='text-sm font-semibold'>First-row starting side</legend>

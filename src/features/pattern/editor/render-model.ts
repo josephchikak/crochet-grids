@@ -49,6 +49,29 @@ export function getChartLayout (
   }
 }
 
+const followVisibleRows = 16
+
+// Follow mode keeps at least 16 rows in view and centres the row being worked
+export function getFollowLayout (
+  grid: PatternGrid,
+  container: { width: number, height: number },
+  rowIndex: number
+): ChartLayout {
+  const fit = getChartLayout(grid, container, { zoom: 1, offsetX: 0, offsetY: 0 })
+  if (grid.height <= followVisibleRows) return fit
+
+  const cellSize = Math.min(container.width / grid.width, container.height / followVisibleRows)
+  const width = cellSize * grid.width
+  const height = cellSize * grid.height
+  return {
+    cellSize,
+    width,
+    height,
+    originX: (container.width - width) / 2,
+    originY: container.height / 2 - ((grid.height - 1 - rowIndex) * cellSize + cellSize / 2)
+  }
+}
+
 // Zooms while keeping the chart point under `anchor` (relative to the container centre) fixed
 export function zoomViewport (
   viewport: ChartViewport,

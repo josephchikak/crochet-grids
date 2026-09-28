@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { PatternProject } from '@/features/pattern/model/types'
 import { createEditorState, editorReducer } from './editor-state'
-import { getChartLayout, pointToCell } from './render-model'
+import { getChartLayout, getFollowLayout, pointToCell } from './render-model'
 import { PatternEditor } from './pattern-editor'
 
 // 4 stitches × 3 rows; row index 0 is crochet row 1 (bottom)
@@ -244,6 +244,21 @@ describe('PatternEditor', () => {
       "This chart isn't being saved. This device is out of space for saved charts."
     )
   })
+
+  it('opens follow mode and saves row progress through the project', async () => {
+    const user = userEvent.setup()
+    render(<PatternEditor project={project} onProjectChange={onChange} />)
+
+    await user.click(screen.getByRole('button', { name: 'Follow pattern' }))
+    expect(screen.getByText('Row 1 of 3')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Complete row 1' }))
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ currentRow: 2, completedRows: [1] }))
+
+    await user.click(screen.getByRole('button', { name: 'Back to editor' }))
+    expect(screen.queryByText(/row 2 of 3/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
 })
 
 describe('editorReducer', () => {
@@ -310,5 +325,22 @@ describe('chart render model', () => {
     expect(pointToCell(grid, layout, 10, 290)).toEqual({ column: 0, row: 0 })
     expect(pointToCell(grid, layout, 390, 10)).toEqual({ column: 3, row: 2 })
     expect(pointToCell(grid, layout, 401, 10)).toBeNull()
+  })
+})
+
+describe('follow layout', () => {
+  it('keeps rows readable and centres the current row', () => {
+    const grid = { width: 10, height: 200, cells: new Uint8Array(2000) }
+    const layout = getFollowLayout(grid, { width: 400, height: 320 }, 50)
+
+    expect(layout.cellSize).toBe(20)
+    const rowTop = layout.originY + (grid.height - 1 - 50) * layout.cellSize
+    expect(rowTop + layout.cellSize / 2).toBe(160)
+  })
+
+  it('shows small charts whole', () => {
+    const grid = { width: 4, height: 3, cells: new Uint8Array(12) }
+    expect(getFollowLayout(grid, { width: 400, height: 300 }, 0))
+      .toEqual(getChartLayout(grid, { width: 400, height: 300 }, { zoom: 1, offsetX: 0, offsetY: 0 }))
   })
 })

@@ -178,4 +178,16 @@ describe('ProjectSetupForm', () => {
     expect(screen.getByLabelText('Yarn colours')).toHaveAccessibleDescription('Use 2 to 12 colours.')
     expect(convertImage).not.toHaveBeenCalled()
   })
+
+  it('starts left-handed charts on the left by default', async () => {
+    const user = userEvent.setup()
+    render(<ProjectSetupForm convertImage={vi.fn()} onCreated={vi.fn()} />)
+
+    await user.click(screen.getByLabelText('Left-handed'))
+    expect(screen.getByLabelText('Start on the left')).toBeChecked()
+
+    await user.click(screen.getByLabelText('Start on the right'))
+    expect(screen.getByLabelText('Left-handed')).toBeChecked()
+    expect(screen.getByLabelText('Start on the right')).toBeChecked()
+  })
 })

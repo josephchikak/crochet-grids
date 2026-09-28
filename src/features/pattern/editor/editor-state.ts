@@ -57,6 +57,7 @@ export type EditorAction =
   | { type: 'set-viewport', viewport: ChartViewport }
   | { type: 'move-cursor', columnDelta: number, rowDelta: number }
   | { type: 'focus-row', rowNumber: number, cellIndex?: number }
+  | { type: 'set-progress', currentRow: number, completedRows: number[] }
 
 export const minZoom = 1
 export const maxZoom = 12
@@ -114,6 +115,12 @@ export function editorReducer (state: EditorState, action: EditorAction): Editor
       return moveCursor(state, action.columnDelta, action.rowDelta)
     case 'focus-row':
       return focusRow(state, action.rowNumber, action.cellIndex)
+    case 'set-progress':
+      // Progress is saved with the project but is not an undoable chart edit
+      return {
+        ...state,
+        project: touch({ ...state.project, currentRow: action.currentRow, completedRows: action.completedRows })
+      }
   }
 }
 
