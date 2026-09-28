@@ -2,7 +2,7 @@
 
 import { patternLimits } from '@/features/pattern/model/defaults'
 import { adjustPixels, compositeBackground, cropToSourcePixels, hexToRgb, rgbToHex } from './pixels'
-import { quantizePixels, removeIsolatedSpeckles } from './quantize'
+import { imageRowsToGridRows, quantizePixels, removeIsolatedSpeckles } from './quantize'
 import type {
   ConversionRequest,
   ConversionResult,
@@ -60,10 +60,12 @@ async function convertImage (request: ConversionRequest): Promise<ConversionResu
   const composited = compositeBackground(imageData.data, background)
   const adjusted = adjustPixels(composited, request.brightness, request.contrast)
   const quantized = quantizePixels(adjusted, request.maxColors, background)
-  const cells = request.removeSpeckles
+  const imageCells = request.removeSpeckles
     ? removeIsolatedSpeckles(quantized.indices, request.width, request.height)
     : quantized.indices
-  const preview = createPreview(cells, quantized.colors, request.width, request.height)
+  // The preview stays in image order; the grid is stored bottom row first
+  const preview = createPreview(imageCells, quantized.colors, request.width, request.height)
+  const cells = imageRowsToGridRows(imageCells, request.width, request.height)
   const palette = quantized.colors.map((color, index) => ({
     id: `color-${index}`,
     name: index === 0 ? request.background.name : `Colour ${index + 1}`,

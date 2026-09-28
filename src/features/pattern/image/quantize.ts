@@ -81,6 +81,22 @@ export function removeIsolatedSpeckles (
   return result
 }
 
+// Canvas pixels run top row first; pattern grids run from crochet row 1 at the bottom
+export function imageRowsToGridRows (
+  indices: Uint8Array,
+  width: number,
+  height: number
+): Uint8Array {
+  const result = new Uint8Array(indices.length)
+
+  for (let row = 0; row < height; row += 1) {
+    const source = (height - 1 - row) * width
+    result.set(indices.subarray(source, source + width), row * width)
+  }
+
+  return result
+}
+
 function collectSamples (rgba: Uint8ClampedArray, background: Rgb) {
   const counts = new Map<string, ColorSample>()
 

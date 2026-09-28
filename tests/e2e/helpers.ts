@@ -1,18 +1,40 @@
 import zlib from 'node:zlib'
+import type { Page } from '@playwright/test'
+
+// Records an analytics choice before any page loads so the consent banner never covers controls
+export async function declineAnalytics (page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('crochet-grids-analytics', 'declined')
+  })
+}
 
 // Builds a small RGBA PNG in memory: a solid square motif on a transparent field
 export function createMotifPng (width = 40, height = 40) {
+  return encodePng(width, height, (x, y) => {
+    const inside = x >= width / 4 && x < width * 3 / 4 && y >= height / 4 && y < height * 3 / 4
+    return inside ? [200, 40, 60, 255] : [0, 0, 0, 0]
+  })
+}
+
+// Top half red with a green top-left corner, bottom half blue: shows if a chart is flipped
+export function createOrientationPng (size = 40) {
+  return encodePng(size, size, (x, y) => {
+    if (x < size / 4 && y < size / 4) return [0, 160, 60, 255]
+    return y < size / 2 ? [220, 30, 30, 255] : [30, 60, 220, 255]
+  })
+}
+
+function encodePng (
+  width: number,
+  height: number,
+  pixelAt: (x: number, y: number) => [number, number, number, number]
+) {
   const stride = width * 4 + 1
   const raw = Buffer.alloc(stride * height)
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const offset = y * stride + 1 + x * 4
-      const inside = x >= width / 4 && x < width * 3 / 4 && y >= height / 4 && y < height * 3 / 4
-      raw[offset] = inside ? 200 : 0
-      raw[offset + 1] = inside ? 40 : 0
-      raw[offset + 2] = inside ? 60 : 0
-      raw[offset + 3] = inside ? 255 : 0
+      raw.set(pixelAt(x, y), y * stride + 1 + x * 4)
     }
   }
 
