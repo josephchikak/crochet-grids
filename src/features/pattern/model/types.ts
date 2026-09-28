@@ -54,3 +54,21 @@ export interface PatternProject {
   currentRow: number
   completedRows: number[]
 }
+
+export type PatternWarningType =
+  | 'isolated-cell'
+  | 'many-changes'
+  | 'many-row-colors'
+  | 'similar-colors'
+  | 'small-detail'
+  | 'large-chart'
+
+export interface PatternWarning {
+  id: string
+  type: PatternWarningType
+  severity: 'info' | 'warning'
+  message: string
+  // Crochet row numbers, counted from 1 at the bottom
+  rows: number[]
+  cellIndices: number[]
+}

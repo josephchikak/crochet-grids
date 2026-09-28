@@ -44,7 +44,7 @@ test('edits a chart on a phone without page overflow', async ({ page }) => {
   const yarnName = page.getByLabel('Yarn name for colour 1')
   await expect(yarnName).toBeVisible()
   await yarnName.fill('Cream cotton')
-  await page.getByRole('button', { name: 'Close palette' }).click()
+  await page.getByRole('button', { name: 'Close panel' }).click()
   await expect(yarnName).toBeHidden()
 
   const overflows = await page.evaluate(() =>

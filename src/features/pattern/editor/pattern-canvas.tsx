@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import type { PaletteEntry, PatternGrid } from '@/features/pattern/model/types'
 import { isStrokeTool, type ChartView, type ChartViewport, type EditorTool } from './editor-state'
-import { drawChart, getChartLayout, pointToCell, zoomViewport } from './render-model'
+import { cellRect, drawChart, getChartLayout, pointToCell, zoomViewport } from './render-model'
 
 interface PatternCanvasProps {
   grid: PatternGrid
@@ -12,6 +12,7 @@ interface PatternCanvasProps {
   showSymbols: boolean
   viewport: ChartViewport
   cursor: { column: number, row: number }
+  highlightRow?: number
   tool: EditorTool
   onStrokeStart: () => void
   onStrokeCell: (column: number, row: number) => void
@@ -36,7 +37,7 @@ const keyMoves: Record<string, [number, number]> = {
 }
 
 export const PatternCanvas = memo(function PatternCanvas (props: PatternCanvasProps) {
-  const { grid, palette, view, showSymbols, viewport, cursor, tool } = props
+  const { grid, palette, view, showSymbols, viewport, cursor, highlightRow, tool } = props
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pointers = useRef(new Map<number, { x: number, y: number }>())
@@ -75,11 +76,28 @@ export const PatternCanvas = memo(function PatternCanvas (props: PatternCanvasPr
         layout,
         view,
         showSymbols,
-        cursor: hasKeyboardFocus ? cursor : undefined
+        highlightRow,
+        cursor: hasKeyboardFocus || highlightRow !== undefined ? cursor : undefined
       })
     })
     return () => cancelAnimationFrame(frame)
-  }, [cursor, grid, hasKeyboardFocus, layout, palette, showSymbols, size, view])
+  }, [cursor, grid, hasKeyboardFocus, highlightRow, layout, palette, showSymbols, size, view])
+
+  // Bring the cursor back into view when the keyboard or a pattern check moves it off-screen
+  useEffect(() => {
+    const { props: current, layout: currentLayout, size: currentSize } = latest.current
+    if (currentSize.width === 0) return
+    const rect = cellRect(current.grid, currentLayout, cursor.column, cursor.row)
+    const isVisible = rect.x >= 0 && rect.y >= 0 &&
+      rect.x + rect.size <= currentSize.width && rect.y + rect.size <= currentSize.height
+    if (isVisible) return
+
+    current.onViewportChange({
+      ...current.viewport,
+      offsetX: current.viewport.offsetX + currentSize.width / 2 - (rect.x + rect.size / 2),
+      offsetY: current.viewport.offsetY + currentSize.height / 2 - (rect.y + rect.size / 2)
+    })
+  }, [cursor])
 
   useEffect(() => {
     const canvas = canvasRef.current

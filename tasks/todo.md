@@ -6,7 +6,7 @@
 - [x] Task 4: Local image conversion and palette reduction
 - [x] Task 5: Project setup workflow
 - [x] Task 6: Canvas editor, palette, and responsive tools
-- [ ] Task 7: Crochet complexity guidance
+- [x] Task 7: Crochet complexity guidance
 - [ ] Task 8: IndexedDB persistence and recent projects
 - [ ] Task 9: Row-following mode
 - [ ] Task 10: PNG and printable PDF exports

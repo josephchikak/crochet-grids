@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
-import { ArrowLeft, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
-import type { PaletteEntry, PatternProject } from '@/features/pattern/model/types'
+import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { ArrowLeft, ListChecks, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { analysePattern } from '@/features/pattern/analysis/analyse-pattern'
+import type { PaletteEntry, PatternProject, PatternWarning } from '@/features/pattern/model/types'
+import { ChecksPanel } from './checks-panel'
 import {
   createEditorState,
   editorReducer,
@@ -30,10 +32,18 @@ const toolShortcuts: Record<string, EditorTool> = {
 
 export function PatternEditor ({ project, onProjectChange }: PatternEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, project, createEditorState)
-  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [panelTab, setPanelTab] = useState<'palette' | 'checks'>('palette')
   const [isMirrorOpen, setIsMirrorOpen] = useState(false)
   const reportedProject = useRef(project)
   const { grid, palette } = state.project
+  // Analysis trails behind painting so strokes stay responsive on large charts
+  const analysedGrid = useDeferredValue(grid)
+  const analysedPalette = useDeferredValue(palette)
+  const warnings = useMemo(
+    () => analysePattern(analysedGrid, analysedPalette, state.project.backgroundPaletteIndex),
+    [analysedGrid, analysedPalette, state.project.backgroundPaletteIndex]
+  )
 
   useEffect(() => {
     if (state.project === reportedProject.current) return
@@ -81,7 +91,18 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
   const handleUndo = useCallback(() => dispatch({ type: 'undo' }), [])
   const handleRedo = useCallback(() => dispatch({ type: 'redo' }), [])
   const openMirror = useCallback(() => setIsMirrorOpen(true), [])
-  const openPalette = useCallback(() => setIsPaletteOpen(true), [])
+  const openPalette = useCallback(() => {
+    setPanelTab('palette')
+    setIsPanelOpen(true)
+  }, [])
+  const openChecks = useCallback(() => {
+    setPanelTab('checks')
+    setIsPanelOpen(true)
+  }, [])
+  const focusWarning = useCallback((warning: PatternWarning) => {
+    dispatch({ type: 'focus-row', rowNumber: warning.rows[0], cellIndex: warning.cellIndices[0] })
+    setIsPanelOpen(false)
+  }, [])
   const toggleSymbols = useCallback(() => dispatch({ type: 'toggle-symbols' }), [])
   const toggleView = useCallback(() => dispatch({
     type: 'set-view',
@@ -101,6 +122,16 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
           <h1 className='truncate text-lg font-semibold tracking-[-0.02em]'>{state.project.name}</h1>
           <p className='font-mono text-xs text-ink-muted'>{grid.width} × {grid.height} stitches</p>
         </div>
+        <button
+          aria-label={`Pattern checks: ${warnings.length} ${warnings.length === 1 ? 'suggestion' : 'suggestions'}`}
+          className='flex min-h-11 items-center gap-2 border border-ink px-3 text-sm font-semibold'
+          onClick={openChecks}
+          type='button'
+        >
+          <ListChecks aria-hidden='true' size={18} />
+          <span className='hidden sm:inline'>Checks</span>
+          <span className={`min-w-6 px-1.5 text-center font-mono text-xs ${warnings.length > 0 ? 'bg-poppy text-ink' : 'bg-sage'}`}>{warnings.length}</span>
+        </button>
       </header>
 
       <div className='relative flex min-h-0 flex-1'>
@@ -108,6 +139,7 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
           <PatternCanvas
             cursor={state.cursor}
             grid={grid}
+            highlightRow={state.highlightRow}
             onApplyTool={applyTool}
             onCursorMove={moveCursor}
             onStrokeCancel={strokeCancel}
@@ -129,24 +161,42 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
         </main>
 
         <aside
-          aria-label='Palette'
-          className={`${isPaletteOpen ? 'flex' : 'hidden'} fixed inset-x-0 bottom-0 z-20 max-h-[72dvh] flex-col border-t border-ink bg-cotton shadow-[0_-8px_24px_rgb(24_32_25/18%)] md:static md:flex md:max-h-none md:w-80 md:border-l md:border-t-0 md:shadow-none lg:w-96`}
+          aria-label='Palette and pattern checks'
+          className={`${isPanelOpen ? 'flex' : 'hidden'} fixed inset-x-0 bottom-0 z-20 max-h-[72dvh] flex-col border-t border-ink bg-cotton shadow-[0_-8px_24px_rgb(24_32_25/18%)] md:static md:flex md:max-h-none md:w-80 md:border-l md:border-t-0 md:shadow-none lg:w-96`}
         >
-          <div className='flex min-h-14 items-center justify-between border-b border-grid px-4'>
-            <h2 className='font-semibold'>Palette</h2>
-            <button aria-label='Close palette' className='grid size-11 place-items-center md:hidden' onClick={() => setIsPaletteOpen(false)} type='button'>
+          <div className='flex min-h-14 items-stretch justify-between border-b border-grid pl-2'>
+            <div aria-label='Side panel' className='flex' role='tablist'>
+              <PanelTab controls='palette-panel' label='Palette' onSelect={() => setPanelTab('palette')} selected={panelTab === 'palette'} />
+              <PanelTab
+                controls='checks-panel'
+                count={warnings.length}
+                label='Checks'
+                onSelect={() => setPanelTab('checks')}
+                selected={panelTab === 'checks'}
+              />
+            </div>
+            <button aria-label='Close panel' className='grid size-14 place-items-center md:hidden' onClick={() => setIsPanelOpen(false)} type='button'>
               <X aria-hidden='true' size={20} />
             </button>
           </div>
-          <div className='overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
-            <PalettePanel
-              activeColor={state.activeColor}
-              grid={grid}
-              onReplaceColor={replaceColor}
-              onSelectColor={selectColor}
-              onUpdateEntry={updateEntry}
-              palette={palette}
-            />
+          <div
+            aria-labelledby={`${panelTab}-tab`}
+            className='overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]'
+            id={`${panelTab}-panel`}
+            role='tabpanel'
+          >
+            {panelTab === 'palette'
+              ? (
+                <PalettePanel
+                  activeColor={state.activeColor}
+                  grid={grid}
+                  onReplaceColor={replaceColor}
+                  onSelectColor={selectColor}
+                  onUpdateEntry={updateEntry}
+                  palette={palette}
+                />
+                )
+              : <ChecksPanel gridWidth={grid.width} onFocusWarning={focusWarning} warnings={warnings} />}
           </div>
         </aside>
       </div>
@@ -177,6 +227,29 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
         />
       )}
     </div>
+  )
+}
+
+function PanelTab ({ label, controls, selected, count, onSelect }: {
+  label: string
+  controls: string
+  selected: boolean
+  count?: number
+  onSelect: () => void
+}) {
+  return (
+    <button
+      aria-controls={controls}
+      aria-selected={selected}
+      className={`flex min-h-14 items-center gap-2 border-b-2 px-3 font-semibold ${selected ? 'border-ink' : 'border-transparent text-ink-muted'}`}
+      id={`${controls.replace('-panel', '')}-tab`}
+      onClick={onSelect}
+      role='tab'
+      type='button'
+    >
+      {label}
+      {count !== undefined && <span className='font-mono text-xs'>{count}</span>}
+    </button>
   )
 }
 

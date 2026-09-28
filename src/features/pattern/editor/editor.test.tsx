@@ -199,6 +199,30 @@ describe('PatternEditor', () => {
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
   })
+
+  it('lists crochet checks without blocking editing and focuses the affected row', async () => {
+    const user = userEvent.setup()
+    render(<PatternEditor project={project} onProjectChange={onChange} />)
+
+    await user.click(screen.getByRole('button', { name: 'Pattern checks: 3 suggestions' }))
+    expect(screen.getByRole('tab', { name: /checks/i })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Single stitches')).toBeInTheDocument()
+    expect(screen.getByText('Busy rows')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /single stitch on row 2, stitch 3/i }))
+
+    expect(screen.getByRole('application', { name: /cursor at stitch 3, row 2/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pencil' })).toBeEnabled()
+  })
+
+  it('updates checks after an edit removes the problem', async () => {
+    const user = userEvent.setup()
+    render(<PatternEditor project={project} onProjectChange={onChange} />)
+
+    await user.selectOptions(screen.getByLabelText('Replace colour 3 with'), 'Colour 2')
+
+    expect(await screen.findByRole('button', { name: 'Pattern checks: 2 suggestions' })).toBeInTheDocument()
+  })
 })
 
 describe('editorReducer', () => {

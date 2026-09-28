@@ -34,6 +34,8 @@ export interface EditorState {
   showSymbols: boolean
   viewport: ChartViewport
   cursor: { column: number, row: number }
+  // Grid row index emphasised after choosing a pattern check
+  highlightRow?: number
   stroke?: Map<number, number>
 }
 
@@ -54,6 +56,7 @@ export type EditorAction =
   | { type: 'toggle-symbols' }
   | { type: 'set-viewport', viewport: ChartViewport }
   | { type: 'move-cursor', columnDelta: number, rowDelta: number }
+  | { type: 'focus-row', rowNumber: number, cellIndex?: number }
 
 export const minZoom = 1
 export const maxZoom = 12
@@ -80,9 +83,9 @@ export function editorReducer (state: EditorState, action: EditorAction): Editor
       if (!isPaletteIndex(state, action.paletteIndex)) return state
       return { ...state, activeColor: action.paletteIndex }
     case 'apply-tool':
-      return applyTool(state, action.column, action.row)
+      return { ...applyTool(state, action.column, action.row), highlightRow: undefined }
     case 'stroke-start':
-      return { ...state, stroke: new Map() }
+      return { ...state, stroke: new Map(), highlightRow: undefined }
     case 'stroke-cell':
       return paintStrokeCell(state, action.column, action.row)
     case 'stroke-end':
@@ -109,6 +112,8 @@ export function editorReducer (state: EditorState, action: EditorAction): Editor
       return { ...state, viewport: clampViewport(action.viewport) }
     case 'move-cursor':
       return moveCursor(state, action.columnDelta, action.rowDelta)
+    case 'focus-row':
+      return focusRow(state, action.rowNumber, action.cellIndex)
   }
 }
 
@@ -265,6 +270,17 @@ function moveCursor (state: EditorState, columnDelta: number, rowDelta: number):
   const column = Math.min(width - 1, Math.max(0, state.cursor.column + columnDelta))
   const row = Math.min(height - 1, Math.max(0, state.cursor.row + rowDelta))
   return { ...state, cursor: { column, row } }
+}
+
+function focusRow (state: EditorState, rowNumber: number, cellIndex?: number): EditorState {
+  const { width, height } = state.project.grid
+  const row = rowNumber - 1
+  if (!Number.isInteger(row) || row < 0 || row >= height) return state
+
+  const column = cellIndex !== undefined && Math.floor(cellIndex / width) === row
+    ? cellIndex % width
+    : state.cursor.column
+  return { ...state, cursor: { column, row }, highlightRow: row }
 }
 
 function clampViewport (viewport: ChartViewport): ChartViewport {
