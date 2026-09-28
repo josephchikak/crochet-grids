@@ -5,7 +5,7 @@
 - [x] Task 3: Grid editing operations and patch history
 - [x] Task 4: Local image conversion and palette reduction
 - [x] Task 5: Project setup workflow
-- [ ] Task 6: Canvas editor, palette, and responsive tools
+- [x] Task 6: Canvas editor, palette, and responsive tools
 - [ ] Task 7: Crochet complexity guidance
 - [ ] Task 8: IndexedDB persistence and recent projects
 - [ ] Task 9: Row-following mode

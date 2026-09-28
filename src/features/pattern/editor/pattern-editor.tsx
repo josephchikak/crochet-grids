@@ -1,0 +1,220 @@
+'use client'
+
+import Link from 'next/link'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { ArrowLeft, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
+import type { PaletteEntry, PatternProject } from '@/features/pattern/model/types'
+import {
+  createEditorState,
+  editorReducer,
+  type ChartViewport,
+  type EditorTool
+} from './editor-state'
+import { EditorToolbar } from './editor-toolbar'
+import { PalettePanel } from './palette-panel'
+import { PatternCanvas } from './pattern-canvas'
+import { zoomViewport } from './render-model'
+
+interface PatternEditorProps {
+  project: PatternProject
+  onProjectChange: (project: PatternProject) => void
+}
+
+const toolShortcuts: Record<string, EditorTool> = {
+  b: 'pencil',
+  g: 'fill',
+  i: 'picker',
+  e: 'erase',
+  h: 'pan'
+}
+
+export function PatternEditor ({ project, onProjectChange }: PatternEditorProps) {
+  const [state, dispatch] = useReducer(editorReducer, project, createEditorState)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+  const [isMirrorOpen, setIsMirrorOpen] = useState(false)
+  const reportedProject = useRef(project)
+  const { grid, palette } = state.project
+
+  useEffect(() => {
+    if (state.project === reportedProject.current) return
+    reportedProject.current = state.project
+    onProjectChange(state.project)
+  }, [onProjectChange, state.project])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+      const key = event.key.toLowerCase()
+      if ((event.ctrlKey || event.metaKey) && key === 'z') {
+        event.preventDefault()
+        dispatch({ type: event.shiftKey ? 'redo' : 'undo' })
+        return
+      }
+      if ((event.ctrlKey || event.metaKey) && key === 'y') {
+        event.preventDefault()
+        dispatch({ type: 'redo' })
+        return
+      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      const tool = toolShortcuts[key]
+      if (tool) dispatch({ type: 'select-tool', tool })
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const selectTool = useCallback((tool: EditorTool) => dispatch({ type: 'select-tool', tool }), [])
+  const selectColor = useCallback((paletteIndex: number) => dispatch({ type: 'select-color', paletteIndex }), [])
+  const updateEntry = useCallback((paletteIndex: number, changes: Partial<Omit<PaletteEntry, 'id'>>) =>
+    dispatch({ type: 'update-palette', paletteIndex, changes }), [])
+  const replaceColor = useCallback((source: number, replacement: number) =>
+    dispatch({ type: 'replace-color', source, replacement }), [])
+  const strokeStart = useCallback(() => dispatch({ type: 'stroke-start' }), [])
+  const strokeCell = useCallback((column: number, row: number) => dispatch({ type: 'stroke-cell', column, row }), [])
+  const strokeEnd = useCallback(() => dispatch({ type: 'stroke-end' }), [])
+  const strokeCancel = useCallback(() => dispatch({ type: 'stroke-cancel' }), [])
+  const applyTool = useCallback((column: number, row: number) => dispatch({ type: 'apply-tool', column, row }), [])
+  const setViewport = useCallback((viewport: ChartViewport) => dispatch({ type: 'set-viewport', viewport }), [])
+  const moveCursor = useCallback((columnDelta: number, rowDelta: number) =>
+    dispatch({ type: 'move-cursor', columnDelta, rowDelta }), [])
+  const handleUndo = useCallback(() => dispatch({ type: 'undo' }), [])
+  const handleRedo = useCallback(() => dispatch({ type: 'redo' }), [])
+  const openMirror = useCallback(() => setIsMirrorOpen(true), [])
+  const openPalette = useCallback(() => setIsPaletteOpen(true), [])
+  const toggleSymbols = useCallback(() => dispatch({ type: 'toggle-symbols' }), [])
+  const toggleView = useCallback(() => dispatch({
+    type: 'set-view',
+    view: state.view === 'grid' ? 'crochet' : 'grid'
+  }), [state.view])
+  const zoomBy = useCallback((factor: number) => setViewport(
+    zoomViewport(state.viewport, state.viewport.zoom * factor, { x: 0, y: 0 })
+  ), [setViewport, state.viewport])
+
+  return (
+    <div className='flex h-dvh flex-col overflow-hidden bg-cotton text-ink'>
+      <header className='flex min-h-14 shrink-0 items-center gap-3 border-b border-ink px-3 sm:px-5'>
+        <Link aria-label='Back home' className='grid size-11 place-items-center' href='/'>
+          <ArrowLeft aria-hidden='true' size={20} />
+        </Link>
+        <div className='min-w-0 flex-1'>
+          <h1 className='truncate text-lg font-semibold tracking-[-0.02em]'>{state.project.name}</h1>
+          <p className='font-mono text-xs text-ink-muted'>{grid.width} × {grid.height} stitches</p>
+        </div>
+      </header>
+
+      <div className='relative flex min-h-0 flex-1'>
+        <main className='relative min-w-0 flex-1 bg-[#e9e2d3]'>
+          <PatternCanvas
+            cursor={state.cursor}
+            grid={grid}
+            onApplyTool={applyTool}
+            onCursorMove={moveCursor}
+            onStrokeCancel={strokeCancel}
+            onStrokeCell={strokeCell}
+            onStrokeEnd={strokeEnd}
+            onStrokeStart={strokeStart}
+            onViewportChange={setViewport}
+            palette={palette}
+            showSymbols={state.showSymbols}
+            tool={state.tool}
+            view={state.view}
+            viewport={state.viewport}
+          />
+          <div className='absolute right-3 top-3 flex flex-col border border-ink bg-cotton'>
+            <button aria-label='Zoom in' className='grid size-11 place-items-center' onClick={() => zoomBy(1.4)} type='button'><ZoomIn aria-hidden='true' size={20} /></button>
+            <button aria-label='Zoom out' className='grid size-11 place-items-center border-t border-grid' onClick={() => zoomBy(1 / 1.4)} type='button'><ZoomOut aria-hidden='true' size={20} /></button>
+            <button aria-label='Fit chart' className='grid size-11 place-items-center border-t border-grid' onClick={() => setViewport({ zoom: 1, offsetX: 0, offsetY: 0 })} type='button'><Maximize aria-hidden='true' size={18} /></button>
+          </div>
+        </main>
+
+        <aside
+          aria-label='Palette'
+          className={`${isPaletteOpen ? 'flex' : 'hidden'} fixed inset-x-0 bottom-0 z-20 max-h-[72dvh] flex-col border-t border-ink bg-cotton shadow-[0_-8px_24px_rgb(24_32_25/18%)] md:static md:flex md:max-h-none md:w-80 md:border-l md:border-t-0 md:shadow-none lg:w-96`}
+        >
+          <div className='flex min-h-14 items-center justify-between border-b border-grid px-4'>
+            <h2 className='font-semibold'>Palette</h2>
+            <button aria-label='Close palette' className='grid size-11 place-items-center md:hidden' onClick={() => setIsPaletteOpen(false)} type='button'>
+              <X aria-hidden='true' size={20} />
+            </button>
+          </div>
+          <div className='overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
+            <PalettePanel
+              activeColor={state.activeColor}
+              grid={grid}
+              onReplaceColor={replaceColor}
+              onSelectColor={selectColor}
+              onUpdateEntry={updateEntry}
+              palette={palette}
+            />
+          </div>
+        </aside>
+      </div>
+
+      <EditorToolbar
+        activeEntry={palette[state.activeColor]}
+        canRedo={state.history.redoStack.length > 0}
+        canUndo={state.history.undoStack.length > 0}
+        onMirror={openMirror}
+        onOpenPalette={openPalette}
+        onRedo={handleRedo}
+        onSelectTool={selectTool}
+        onToggleSymbols={toggleSymbols}
+        onToggleView={toggleView}
+        onUndo={handleUndo}
+        showSymbols={state.showSymbols}
+        tool={state.tool}
+        view={state.view}
+      />
+
+      {isMirrorOpen && (
+        <MirrorDialog
+          onCancel={() => setIsMirrorOpen(false)}
+          onConfirm={() => {
+            dispatch({ type: 'mirror' })
+            setIsMirrorOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function MirrorDialog ({ onCancel, onConfirm }: { onCancel: () => void, onConfirm: () => void }) {
+  const cancelRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    cancelRef.current?.focus()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
+
+  return (
+    <div className='fixed inset-0 z-30 grid place-items-end bg-ink/40 p-4 sm:place-items-center'>
+      <div
+        aria-describedby='mirror-description'
+        aria-labelledby='mirror-title'
+        aria-modal='true'
+        className='w-full max-w-md border border-ink bg-cotton p-5 shadow-[6px_6px_0_var(--ink)]'
+        role='dialog'
+      >
+        <h2 className='text-xl font-semibold' id='mirror-title'>Mirror the motif?</h2>
+        <p className='mt-2 text-sm leading-6 text-ink-muted' id='mirror-description'>
+          Every row flips left to right. Your handedness and starting side stay the same, and you can undo this.
+        </p>
+        <div className='mt-5 flex justify-end gap-3'>
+          <button className='min-h-11 border border-ink px-4 font-semibold' onClick={onCancel} ref={cancelRef} type='button'>Cancel</button>
+          <button className='primary-action min-h-11' onClick={onConfirm} type='button'>Mirror motif</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function isEditableTarget (target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)
+}
