@@ -223,6 +223,27 @@ describe('PatternEditor', () => {
 
     expect(await screen.findByRole('button', { name: 'Pattern checks: 2 suggestions' })).toBeInTheDocument()
   })
+
+  it('shows the save status and warns when the chart is not being saved', () => {
+    const { rerender } = render(<PatternEditor project={project} onProjectChange={onChange} saveStatus='saving' />)
+    expect(screen.getByRole('status')).toHaveTextContent('Saving')
+
+    rerender(<PatternEditor project={project} onProjectChange={onChange} saveStatus='saved' />)
+    expect(screen.getByRole('status')).toHaveTextContent('Saved')
+
+    rerender(
+      <PatternEditor
+        onProjectChange={onChange}
+        project={project}
+        saveError='This device is out of space for saved charts.'
+        saveStatus='failed'
+      />
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('Not saved')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "This chart isn't being saved. This device is out of space for saved charts."
+    )
+  })
 })
 
 describe('editorReducer', () => {

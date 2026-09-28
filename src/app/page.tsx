@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowUpRight, Check, ImagePlus, PencilLine } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
+import { RecentProjects } from '@/features/pattern/persistence/recent-projects'
 
 export default function Home () {
   return (
@@ -41,6 +42,8 @@ export default function Home () {
 
           <MotifPreview />
         </section>
+
+        <RecentProjects />
 
         <section id='how-it-works' className='border-y border-grid bg-ink text-cotton'>
           <div className='mx-auto grid max-w-[1440px] md:grid-cols-3'>

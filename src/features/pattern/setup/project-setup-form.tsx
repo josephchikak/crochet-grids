@@ -10,7 +10,7 @@ import { ImageCropper } from './image-cropper'
 
 interface ProjectSetupFormProps {
   convertImage: (request: ConversionRequest, signal?: AbortSignal) => Promise<ConversionResult>
-  onCreated: (project: PatternProject) => void
+  onCreated: (project: PatternProject) => void | Promise<void>
 }
 
 const imageTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -110,7 +110,7 @@ export function ProjectSetupForm ({ convertImage, onCreated }: ProjectSetupFormP
       }, controller.signal)
       const now = new Date().toISOString()
 
-      onCreated({
+      await onCreated({
         id,
         schemaVersion: 1,
         name: settings.data.name,

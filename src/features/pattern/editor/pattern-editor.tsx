@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { ArrowLeft, ListChecks, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, Check, CloudOff, ListChecks, LoaderCircle, Maximize, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { analysePattern } from '@/features/pattern/analysis/analyse-pattern'
 import type { PaletteEntry, PatternProject, PatternWarning } from '@/features/pattern/model/types'
+import type { SaveStatus } from '@/features/pattern/persistence/use-project-autosave'
 import { ChecksPanel } from './checks-panel'
 import {
   createEditorState,
@@ -20,6 +21,8 @@ import { zoomViewport } from './render-model'
 interface PatternEditorProps {
   project: PatternProject
   onProjectChange: (project: PatternProject) => void
+  saveStatus?: SaveStatus
+  saveError?: string
 }
 
 const toolShortcuts: Record<string, EditorTool> = {
@@ -30,7 +33,7 @@ const toolShortcuts: Record<string, EditorTool> = {
   h: 'pan'
 }
 
-export function PatternEditor ({ project, onProjectChange }: PatternEditorProps) {
+export function PatternEditor ({ project, onProjectChange, saveStatus = 'idle', saveError }: PatternEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, project, createEditorState)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [panelTab, setPanelTab] = useState<'palette' | 'checks'>('palette')
@@ -120,7 +123,10 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
         </Link>
         <div className='min-w-0 flex-1'>
           <h1 className='truncate text-lg font-semibold tracking-[-0.02em]'>{state.project.name}</h1>
-          <p className='font-mono text-xs text-ink-muted'>{grid.width} × {grid.height} stitches</p>
+          <p className='flex flex-wrap items-center gap-x-2 font-mono text-xs text-ink-muted'>
+            <span>{grid.width} × {grid.height} stitches</span>
+            <SaveIndicator error={saveError} status={saveStatus} />
+          </p>
         </div>
         <button
           aria-label={`Pattern checks: ${warnings.length} ${warnings.length === 1 ? 'suggestion' : 'suggestions'}`}
@@ -133,6 +139,13 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
           <span className={`min-w-6 px-1.5 text-center font-mono text-xs ${warnings.length > 0 ? 'bg-poppy text-ink' : 'bg-sage'}`}>{warnings.length}</span>
         </button>
       </header>
+
+      {saveStatus === 'failed' && (
+        <p className='flex shrink-0 items-start gap-2 border-b border-poppy bg-poppy/15 px-4 py-2 text-sm leading-6' role='alert'>
+          <CloudOff aria-hidden='true' className='mt-1 shrink-0' size={16} />
+          <span>This chart isn&apos;t being saved. {saveError ?? 'The browser refused to store it.'} Keep this tab open until you have exported it.</span>
+        </p>
+      )}
 
       <div className='relative flex min-h-0 flex-1'>
         <main className='relative min-w-0 flex-1 bg-[#e9e2d3]'>
@@ -227,6 +240,16 @@ export function PatternEditor ({ project, onProjectChange }: PatternEditorProps)
         />
       )}
     </div>
+  )
+}
+
+function SaveIndicator ({ status, error }: { status: SaveStatus, error?: string }) {
+  return (
+    <span className='inline-flex items-center gap-1' role='status' title={status === 'failed' ? error : undefined}>
+      {status === 'saving' && <><LoaderCircle aria-hidden='true' className='animate-spin motion-reduce:animate-none' size={12} /> Saving</>}
+      {status === 'saved' && <><Check aria-hidden='true' size={12} /> Saved</>}
+      {status === 'failed' && <span className='font-semibold text-poppy'>Not saved</span>}
+    </span>
   )
 }
 

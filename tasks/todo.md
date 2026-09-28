@@ -7,7 +7,7 @@
 - [x] Task 5: Project setup workflow
 - [x] Task 6: Canvas editor, palette, and responsive tools
 - [x] Task 7: Crochet complexity guidance
-- [ ] Task 8: IndexedDB persistence and recent projects
+- [x] Task 8: IndexedDB persistence and recent projects
 - [ ] Task 9: Row-following mode
 - [ ] Task 10: PNG and printable PDF exports
 - [ ] Task 11: SEO, legal pages, consent, and release surfaces
