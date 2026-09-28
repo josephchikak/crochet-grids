@@ -1,7 +1,7 @@
 # Crochet Grids MVP
 
 - [x] Task 1: Application foundation and public shell
-- [ ] Task 2: Crochet domain model and row instructions
+- [x] Task 2: Crochet domain model and row instructions
 - [ ] Task 3: Grid editing operations and patch history
 - [ ] Task 4: Local image conversion and palette reduction
 - [ ] Task 5: Project setup workflow
