@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { ProjectEditorScreen } from '@/features/pattern/editor/project-editor-screen'
 
 export const metadata: Metadata = {
-  title: 'Edit crochet chart — Crochet Grids',
+  title: 'Edit crochet chart',
   description: 'Correct stitches, yarn names and symbols in your crochet motif chart.'
 }
 

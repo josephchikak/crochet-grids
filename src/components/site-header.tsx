@@ -13,9 +13,11 @@ export function SiteHeader () {
           </span>
           Crochet Grids
         </Link>
-        <a className='text-link text-sm' href='#how-it-works'>
-          How it works
-        </a>
+        <nav aria-label='Main navigation' className='flex items-center gap-4 text-sm'>
+          <Link className='text-link hidden sm:inline' href='/privacy'>Privacy</Link>
+          <Link className='text-link hidden md:inline' href='/terms'>Terms</Link>
+          <Link className='text-link' href='/#how-it-works'>How it works</Link>
+        </nav>
       </div>
     </header>
   )

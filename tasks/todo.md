@@ -10,7 +10,7 @@
 - [x] Task 8: IndexedDB persistence and recent projects
 - [x] Task 9: Row-following mode
 - [x] Task 10: PNG and printable PDF exports
-- [ ] Task 11: SEO, legal pages, consent, and release surfaces
+- [x] Task 11: SEO, legal pages, consent, and release surfaces
 - [ ] Task 12: End-to-end verification and MVP review
 
 ## Review

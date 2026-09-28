@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { CreateProjectScreen } from '@/features/pattern/setup/create-project-screen'
 
 export const metadata: Metadata = {
-  title: 'Create a crochet chart — Crochet Grids',
+  title: 'Create a crochet chart',
   description: 'Prepare an image and turn it into an editable flat single-crochet motif.'
 }
 

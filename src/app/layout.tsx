@@ -1,6 +1,7 @@
-import type { Metadata } from 'next'
 import { Azeret_Mono, Figtree } from 'next/font/google'
 import type { ReactNode } from 'react'
+import { ConsentManager } from '@/components/consent-banner'
+import { siteMetadata } from '@/lib/metadata'
 import './globals.css'
 
 const figtree = Figtree({
@@ -13,10 +14,7 @@ const azeretMono = Azeret_Mono({
   subsets: ['latin']
 })
 
-export const metadata: Metadata = {
-  title: 'Crochet Grids — Turn images into crochet charts',
-  description: 'Convert a logo, graphic or photo into an editable single-crochet motif chart.'
-}
+export const metadata = siteMetadata
 
 export default function RootLayout ({ children }: { children: ReactNode }) {
   return (
@@ -24,7 +22,10 @@ export default function RootLayout ({ children }: { children: ReactNode }) {
       lang="en"
       className={`${figtree.variable} ${azeretMono.variable} h-full antialiased`}
     >
-      <body className='flex min-h-full flex-col'>{children}</body>
+      <body className='flex min-h-full flex-col'>
+        {children}
+        <ConsentManager />
+      </body>
     </html>
   )
 }

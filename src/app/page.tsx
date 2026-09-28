@@ -58,6 +58,17 @@ export default function Home () {
         </section>
       </main>
 
+      <footer className='border-b border-grid bg-cotton px-5 py-8 text-sm sm:px-10 lg:px-14'>
+        <div className='mx-auto flex max-w-[1440px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+          <p className='text-ink-muted'>Made for crochet artists in Abuja, Nigeria.</p>
+          <nav aria-label='Footer navigation' className='flex flex-wrap gap-x-5 gap-y-3'>
+            <Link className='text-link' href='/privacy'>Privacy</Link>
+            <Link className='text-link' href='/terms'>Terms</Link>
+            <a className='text-link' href='mailto:raytheboffin@gmail.com'>raytheboffin@gmail.com</a>
+          </nav>
+        </div>
+      </footer>
+
       <Link
         aria-label='Start a new pattern'
         className='fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 flex min-h-12 items-center gap-2 border border-ink bg-indigo px-5 font-semibold text-white shadow-[4px_4px_0_var(--ink)] sm:hidden'
